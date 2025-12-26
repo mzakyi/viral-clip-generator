@@ -42,7 +42,7 @@ st.markdown(f"""
         --secondary-color: #0f172a;      /* Navy background */
         --accent-color: #474516;         /* Olive button tone */
         --accent-hover: #5a571a;
-        --text-primary: #474516;
+        --text-primary: #e2e8f0;
         --text-secondary: #a3b2c2;
         --card-bg: rgba(15,23,42,0.9);
         --dark-bg: #0b1120;
