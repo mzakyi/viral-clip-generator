@@ -1,4 +1,11 @@
 import streamlit as st
+# Page configuration
+st.set_page_config(
+    page_title="Viral Clip Generator",
+    page_icon="🎬",
+    layout="wide"
+)
+
 
 # ======= LOGIN CONFIGURATION =======
 # Simple user/password dictionary
@@ -292,12 +299,6 @@ from audio_energy_detector import (
 # Load environment variables
 load_dotenv()
 
-# Page configuration
-st.set_page_config(
-    page_title="Viral Clip Generator",
-    page_icon="🎬",
-    layout="wide"
-)
 
 # ===== HELPER FUNCTIONS =====
 def generate_simple_clickbait(video_title):
