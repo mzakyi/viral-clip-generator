@@ -56,7 +56,7 @@ def add_text_overlay(clip, text="Hook", font_size=50, color='white', pos='center
     if duration is None:
         duration = clip.duration
     
-    txt_clip = TextClip(text=text, font_size=font_size, color=color)
+    txt_clip = TextClip(text=text, font_size=font_size, color=color, font='DejaVu-Sans-Bold')
     txt_clip = txt_clip.with_position(pos).with_duration(duration)  # FIXED: set_position/set_duration → with_position/with_duration
     
     return CompositeVideoClip([clip, txt_clip])
@@ -233,7 +233,6 @@ def create_clip(video_path, start_time, end_time, output_name='clip', add_captio
                 color='white',
                 stroke_color='black',
                 stroke_width=2,
-                font='Arial-Bold',
                 method='caption',
                 size=(clip.w * 0.9, None)
             )
@@ -335,7 +334,6 @@ def add_multiple_text_overlays(clip, text_overlays):
             color=overlay.get('color', 'yellow'),
             stroke_color='black',
             stroke_width=3,
-            font='Arial-Bold',
             method='caption',
             size=(int(clip.w * 0.85), None)
         )
@@ -375,7 +373,6 @@ def add_intro_outro_overlay(clip, intro_text="", outro_text="", intro_duration=3
             color='white',
             stroke_color='black',
             stroke_width=4,
-            font='Arial-Bold',
             method='caption',
             size=(int(clip.w * 0.8), None)
         )
@@ -396,7 +393,6 @@ def add_intro_outro_overlay(clip, intro_text="", outro_text="", intro_duration=3
             color='yellow',
             stroke_color='black',
             stroke_width=4,
-            font='Arial-Bold',
             method='caption',
             size=(int(clip.w * 0.8), None)
         )
@@ -929,7 +925,6 @@ def auto_optimize_video(video_path, suggestions, user_instructions=""):
                         color=rec['color'],
                         stroke_color='black',
                         stroke_width=3,
-                        font='Arial-Bold',
                         method='caption',
                         size=(int(clip.w * 0.85), None)
                     )
@@ -1016,7 +1011,6 @@ def auto_optimize_video(video_path, suggestions, user_instructions=""):
             color='yellow',
             stroke_color='black',
             stroke_width=4,
-            font='Arial-Bold'
         )
         intro_txt = intro_txt.set_position('center').set_duration(2).set_start(0)
         intro_txt = intro_txt.crossfadein(0.5).crossfadeout(0.5)
@@ -1027,7 +1021,6 @@ def auto_optimize_video(video_path, suggestions, user_instructions=""):
             color='white',
             stroke_color='black',
             stroke_width=4,
-            font='Arial-Bold'
         )
         outro_start = max(0, final_clip.duration - 3)
         outro_txt = outro_txt.set_position('center').set_duration(3).set_start(outro_start)
