@@ -1,0 +1,7 @@
+.env
+__pycache__/
+*.pyc
+downloads/
+optimized_videos/
+monetization_ready/
+clips/
