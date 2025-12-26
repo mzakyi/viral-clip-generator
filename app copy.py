@@ -188,7 +188,7 @@ if page == "🔥 Discover Viral Videos":
                         col1, col2 = st.columns([1, 3])
                         
                         with col1:
-                            st.image(video['thumbnail'], use_column_width=True)
+                            st.image(video['thumbnail'], use_container_width=True)
                         
                         with col2:
                             st.subheader(video['title'])
@@ -197,9 +197,9 @@ if page == "🔥 Discover Viral Videos":
                             
                             col_a, col_b = st.columns(2)
                             with col_a:
-                                st.link_button("Watch on YouTube", video['url'], use_column_width=True)
+                                st.link_button("Watch on YouTube", video['url'], use_container_width=True)
                             with col_b:
-                                if st.button("🤖 Analyze Moments", key=f"analyze_{video['video_id']}", use_column_width=True):
+                                if st.button("🤖 Analyze Moments", key=f"analyze_{video['video_id']}", use_container_width=True):
                                     st.session_state.analyze_url = video['url']
                                     st.info("✅ Video selected! Go to 'AI Viral Moments' to analyze.")
                         
@@ -357,7 +357,7 @@ elif page == "✂️ Clip Generator":
                 elif end_time - start_time > 60:
                     st.warning("Clip is longer than 60 seconds. Consider shortening for social media.")
                 else:
-                    if st.button("✂️ Create Clip", type="primary", use_column_width=True):
+                    if st.button("✂️ Create Clip", type="primary", use_container_width=True):
                         with st.spinner("Creating clip... This may take a minute..."):
                             result = create_clip(
                                 video_path=st.session_state.downloaded_video['path'],
@@ -475,7 +475,7 @@ elif page == "💰 Monetization Prep":
         with col1:
             st.info("Let AI analyze your video and suggest where to add text, commentary, and effects")
         with col2:
-            if st.button("🧠 Get AI Suggestions", type="primary", use_column_width=True):
+            if st.button("🧠 Get AI Suggestions", type="primary", use_container_width=True):
                 with st.spinner("Analyzing video..."):
                     analysis = analyze_video_for_suggestions(temp_input_path)
                     
@@ -832,7 +832,7 @@ elif page == "💰 Monetization Prep":
         col_reset, col_process = st.columns([1, 2])
 
         with col_reset:
-            if st.button("🔄 Reset All Customizations", type="secondary", use_column_width=True):
+            if st.button("🔄 Reset All Customizations", type="secondary", use_container_width=True):
                 st.session_state.customizations = {
                     'commentary_audio': None,
                     'commentary_segments': [],
@@ -848,7 +848,7 @@ elif page == "💰 Monetization Prep":
                 st.rerun()
 
         with col_process:
-            if st.button("🎬 Process & Download", type="primary", use_column_width=True):
+            if st.button("🎬 Process & Download", type="primary", use_container_width=True):
                 with st.spinner("Processing your clip... This may take 2-3 minutes..."):
                     try:
                         from moviepy.editor import VideoFileClip
@@ -907,7 +907,7 @@ elif page == "💰 Monetization Prep":
                                 data=file,
                                 file_name=f'monetization_ready_{timestamp}.mp4',
                                 mime="video/mp4",
-                                use_column_width=True
+                                use_container_width=True
                             )
                         
                         st.balloons()
@@ -967,7 +967,7 @@ elif page == "🔍 Monetization Checker":
         col1, col2, col3 = st.columns([1, 2, 1])
         
         with col2:
-            if st.button("🔍 Analyze for Monetization", type="primary", use_column_width=True):
+            if st.button("🔍 Analyze for Monetization", type="primary", use_container_width=True):
                 with st.spinner("🧠 Analyzing your video... This may take 30-60 seconds..."):
                     # Run analysis
                     analysis = analyze_video_for_monetization(temp_verify_path)

@@ -20,14 +20,16 @@ from moviepy import (
 
 
 def split_clip(input_path, max_clip_len=4):
+    """Split video into multiple clips"""
     video = VideoFileClip(input_path)
     clips = []
     start = 0
     while start < video.duration:
         end = min(start + max_clip_len, video.duration)
-        clips.append(video.subclip(start, end))
+        clips.append(video.subclipped(start, end))  # FIXED: subclip → subclipped
         start += max_clip_len
     return clips
+
 
 def add_freeze_frame(clip, duration=1):
     """
@@ -37,20 +39,26 @@ def add_freeze_frame(clip, duration=1):
         clip: VideoFileClip object
         duration: Duration of freeze frame in seconds
     """
-    from moviepy.editor import ImageClip
+    from moviepy import ImageClip, concatenate_videoclips
     
     # Get the last frame and create a freeze frame
     last_frame = clip.get_frame(clip.duration - 0.01)
-    freeze_clip = ImageClip(last_frame).set_duration(duration)
+    freeze_clip = ImageClip(last_frame, duration=duration)  # FIXED: set_duration → duration
     
     # Concatenate original clip with freeze frame
     return concatenate_videoclips([clip, freeze_clip])
 
-def add_text_overlay(clip, text="Hook", fontsize=50, color='white', pos='center', duration=None):
+
+def add_text_overlay(clip, text="Hook", font_size=50, color='white', pos='center', duration=None):
+    """Add text overlay to clip"""
+    from moviepy import TextClip, CompositeVideoClip
+    
     if duration is None:
         duration = clip.duration
-    txt_clip = TextClip(text, fontsize=fontsize, color=color)
-    txt_clip = txt_clip.set_position(pos).set_duration(duration)
+    
+    txt_clip = TextClip(text=text, font_size=font_size, color=color)
+    txt_clip = txt_clip.with_position(pos).with_duration(duration)  # FIXED: set_position/set_duration → with_position/with_duration
+    
     return CompositeVideoClip([clip, txt_clip])
 
 def export_video(clips, output_path="output.mp4", fps=30):
@@ -62,12 +70,13 @@ def download_audio_temp(video_url):
     """Download audio from YouTube video to a temporary file"""
     import yt_dlp
     import tempfile
+    import os
+    import time
     
     try:
-        # Create a temporary file for the audio
-        temp_audio = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3')
-        temp_audio_path = temp_audio.name
-        temp_audio.close()
+        # Create a unique temporary directory
+        temp_dir = tempfile.mkdtemp()
+        base_filename = f"audio_{int(time.time())}"
         
         # yt-dlp options for audio extraction
         ydl_opts = {
@@ -77,17 +86,44 @@ def download_audio_temp(video_url):
                 'preferredcodec': 'mp3',
                 'preferredquality': '192',
             }],
-            'outtmpl': temp_audio_path.replace('.mp3', ''),
+            'outtmpl': os.path.join(temp_dir, base_filename + '.%(ext)s'),
             'quiet': True,
             'no_warnings': True,
         }
         
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([video_url])
+            info = ydl.extract_info(video_url, download=True)
+        
+        # Look for the actual file created
+        files_in_dir = os.listdir(temp_dir)
+        
+        # Find any audio file (mp3, m4a, webm, etc.)
+        audio_extensions = ['.mp3', '.m4a', '.webm', '.wav', '.opus']
+        
+        for filename in files_in_dir:
+            file_path = os.path.join(temp_dir, filename)
+            
+            # Check if it's a file with audio extension or just the base name
+            if any(filename.endswith(ext) for ext in audio_extensions):
+                if os.path.getsize(file_path) > 1000:  # At least 1KB
+                    return {
+                        'success': True,
+                        'path': file_path
+                    }
+            # Check if it's the base file without extension (yt-dlp sometimes does this)
+            elif filename.startswith('audio_'):
+                if os.path.getsize(file_path) > 1000:
+                    # Rename it to .mp3
+                    new_path = file_path + '.mp3'
+                    os.rename(file_path, new_path)
+                    return {
+                        'success': True,
+                        'path': new_path
+                    }
         
         return {
-            'success': True,
-            'path': temp_audio_path
+            'success': False,
+            'error': f'No valid audio file found. Files: {files_in_dir}'
         }
         
     except Exception as e:
@@ -104,17 +140,51 @@ def download_video(video_url, output_dir='downloads'):
         # Create downloads directory if it doesn't exist
         os.makedirs(output_dir, exist_ok=True)
         
-        # yt-dlp options
+        # yt-dlp options - FIXED VERSION
         ydl_opts = {
-            'format': 'best[height<=720]',  # 720p or lower for faster download
+            'format': 'best[ext=mp4][height<=720]/best[height<=720]/best',  # Force mp4 when possible
             'outtmpl': os.path.join(output_dir, '%(id)s.%(ext)s'),
-            'quiet': True,
-            'no_warnings': True,
+            'quiet': False,  # Changed to see what's happening
+            'no_warnings': False,  # See warnings
+            'merge_output_format': 'mp4',  # Merge to mp4 if separate streams
+            'postprocessors': [{
+                'key': 'FFmpegVideoConvertor',
+                'preferedformat': 'mp4',  # Convert to mp4 if needed
+            }],
         }
+        
+        print(f"Downloading from: {video_url}")
         
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video_url, download=True)
-            video_path = ydl.prepare_filename(info)
+            
+            # Get the actual downloaded filename
+            video_id = info.get('id')
+            
+            # Check for the downloaded file with various extensions
+            possible_extensions = ['.mp4', '.webm', '.mkv', '.avi']
+            video_path = None
+            
+            for ext in possible_extensions:
+                test_path = os.path.join(output_dir, f'{video_id}{ext}')
+                if os.path.exists(test_path) and os.path.getsize(test_path) > 1000:
+                    video_path = test_path
+                    break
+            
+            # If still not found, search the directory
+            if not video_path:
+                for file in os.listdir(output_dir):
+                    if video_id in file and any(file.endswith(ext) for ext in possible_extensions):
+                        video_path = os.path.join(output_dir, file)
+                        break
+            
+            if not video_path or not os.path.exists(video_path):
+                return {
+                    'success': False,
+                    'error': f'Video file not found after download. Files in directory: {os.listdir(output_dir)}'
+                }
+            
+            print(f"Downloaded to: {video_path}")
             
             return {
                 'success': True,
@@ -137,13 +207,15 @@ def create_clip(video_path, start_time, end_time, output_name='clip', add_captio
         
         # Load video and create clip
         video = VideoFileClip(video_path)
-        clip = video.subclip(start_time, end_time)
+        clip = video.subclipped(start_time, end_time)  # FIXED: subclip → subclipped
         
         # Add captions if requested
         if add_captions and caption_text:
+            from moviepy import TextClip, CompositeVideoClip
+            
             txt_clip = TextClip(
-                caption_text,
-                fontsize=50,
+                text=caption_text,
+                font_size=50,
                 color='white',
                 stroke_color='black',
                 stroke_width=2,
@@ -151,7 +223,7 @@ def create_clip(video_path, start_time, end_time, output_name='clip', add_captio
                 method='caption',
                 size=(clip.w * 0.9, None)
             )
-            txt_clip = txt_clip.set_position(('center', 'top')).set_duration(clip.duration)
+            txt_clip = txt_clip.with_position(('center', 'top')).with_duration(clip.duration)
             clip = CompositeVideoClip([clip, txt_clip])
         
         # Generate output filename
@@ -172,10 +244,12 @@ def create_clip(video_path, start_time, end_time, output_name='clip', add_captio
         }
         
     except Exception as e:
+        import traceback
         return {
             'success': False,
-            'error': str(e)
+            'error': f"{str(e)}\n{traceback.format_exc()}"
         }
+
 
 def get_all_clips(clips_dir='clips'):
     """Get list of all clips in the clips directory"""
@@ -205,16 +279,12 @@ def cleanup_downloads(downloads_dir='downloads'):
         return True
     except Exception as e:
         return False
-    
+
 def add_commentary_audio(video_clip, audio_path):
     """
     Add voice commentary audio to a video clip
-    
-    Args:
-        video_clip: VideoFileClip object
-        audio_path: Path to audio file (mp3, wav, etc.)
     """
-    from moviepy.editor import AudioFileClip, CompositeAudioClip
+    from moviepy import AudioFileClip, CompositeAudioClip
     
     # Load the commentary audio
     commentary = AudioFileClip(audio_path)
@@ -225,10 +295,11 @@ def add_commentary_audio(video_clip, audio_path):
     else:
         mixed_audio = commentary
     
-    # Set the mixed audio to the video
-    final_clip = video_clip.set_audio(mixed_audio)
+    # FIXED: set_audio → with_audio
+    final_clip = video_clip.with_audio(mixed_audio)
     
     return final_clip
+
 
 def add_multiple_text_overlays(clip, text_overlays):
     """
@@ -236,62 +307,57 @@ def add_multiple_text_overlays(clip, text_overlays):
     
     Args:
         clip: VideoFileClip object
-        text_overlays: List of dicts with keys: text, start_time, end_time, position, fontsize, color
+        text_overlays: List of dicts with keys: text, start_time, end_time, position, font_size, color
     """
-    from moviepy.editor import TextClip, CompositeVideoClip
+    from moviepy import TextClip, CompositeVideoClip
     
     video_clips = [clip]
     
     for overlay in text_overlays:
         # Create text with better styling
         txt_clip = TextClip(
-            overlay.get('text', ''),
-            fontsize=overlay.get('fontsize', 50),
+            text=overlay.get('text', ''),
+            font_size=overlay.get('fontsize', 50),
             color=overlay.get('color', 'yellow'),
             stroke_color='black',
             stroke_width=3,
             font='Arial-Bold',
             method='caption',
-            size=(int(clip.w * 0.85), None)  # 85% of video width
+            size=(int(clip.w * 0.85), None)
         )
         
         # Position mapping with proper margins
         position = overlay.get('position', 'center')
         if position == 'top':
-            pos = ('center', int(clip.h * 0.15))  # 15% from top
+            pos = ('center', int(clip.h * 0.15))
         elif position == 'bottom':
-            pos = ('center', int(clip.h * 0.75))  # 75% from top (leaves 25% margin)
-        else:  # center
+            pos = ('center', int(clip.h * 0.75))
+        else:
             pos = 'center'
         
-        txt_clip = txt_clip.set_position(pos)
-        txt_clip = txt_clip.set_start(overlay.get('start_time', 0))
-        txt_clip = txt_clip.set_end(overlay.get('end_time', clip.duration))
+        # FIXED: Use with_position, with_start, with_end instead of set_
+        txt_clip = txt_clip.with_position(pos)
+        txt_clip = txt_clip.with_start(overlay.get('start_time', 0))
+        txt_clip = txt_clip.with_end(overlay.get('end_time', clip.duration))
         
         video_clips.append(txt_clip)
     
     return CompositeVideoClip(video_clips)
 
+
 def add_intro_outro_overlay(clip, intro_text="", outro_text="", intro_duration=3, outro_duration=3):
     """
     Add intro and outro text overlays ON TOP of the video (not black screens)
-    
-    Args:
-        clip: VideoFileClip object
-        intro_text: Text for intro overlay
-        outro_text: Text for outro overlay
-        intro_duration: How long intro text shows (seconds)
-        outro_duration: How long outro text shows (seconds)
     """
-    from moviepy.editor import TextClip, CompositeVideoClip
+    from moviepy import TextClip, CompositeVideoClip
     
     video_clips = [clip]
     
     # Add intro text overlay at the start
     if intro_text:
         intro_txt = TextClip(
-            intro_text,
-            fontsize=70,
+            text=intro_text,
+            font_size=70,
             color='white',
             stroke_color='black',
             stroke_width=4,
@@ -299,10 +365,10 @@ def add_intro_outro_overlay(clip, intro_text="", outro_text="", intro_duration=3
             method='caption',
             size=(int(clip.w * 0.8), None)
         )
-        intro_txt = intro_txt.set_position('center')
-        intro_txt = intro_txt.set_start(0)
-        intro_txt = intro_txt.set_end(intro_duration)
-        intro_txt = intro_txt.crossfadein(0.5).crossfadeout(0.5)  # Fade effect
+        intro_txt = intro_txt.with_position('center')
+        intro_txt = intro_txt.with_start(0)
+        intro_txt = intro_txt.with_end(intro_duration)
+        intro_txt = intro_txt.crossfadein(0.5).crossfadeout(0.5)
         
         video_clips.append(intro_txt)
     
@@ -311,8 +377,8 @@ def add_intro_outro_overlay(clip, intro_text="", outro_text="", intro_duration=3
         outro_start = max(0, clip.duration - outro_duration)
         
         outro_txt = TextClip(
-            outro_text,
-            fontsize=60,
+            text=outro_text,
+            font_size=60,
             color='yellow',
             stroke_color='black',
             stroke_width=4,
@@ -320,14 +386,15 @@ def add_intro_outro_overlay(clip, intro_text="", outro_text="", intro_duration=3
             method='caption',
             size=(int(clip.w * 0.8), None)
         )
-        outro_txt = outro_txt.set_position('center')
-        outro_txt = outro_txt.set_start(outro_start)
-        outro_txt = outro_txt.set_end(clip.duration)
-        outro_txt = outro_txt.crossfadein(0.5)  # Fade in effect
+        outro_txt = outro_txt.with_position('center')
+        outro_txt = outro_txt.with_start(outro_start)
+        outro_txt = outro_txt.with_end(clip.duration)
+        outro_txt = outro_txt.crossfadein(0.5)
         
         video_clips.append(outro_txt)
     
     return CompositeVideoClip(video_clips)
+
 
 def add_zoom_effect(clip, zoom_factor=1.2):
     """
@@ -630,50 +697,43 @@ Focus on the recommendations above, especially adding voice commentary.
 def add_multiple_commentary_segments(video_clip, commentary_segments, original_audio_volume=0.3):
     """
     Add multiple commentary audio segments at different timestamps
-    
-    Args:
-        video_clip: VideoFileClip object
-        commentary_segments: List of dicts with keys: audio_path, start_time, volume
-        original_audio_volume: Volume level for original video audio (0.0 to 1.0)
-    
-    Returns:
-        Video clip with all commentary segments mixed in
     """
-    from moviepy.editor import AudioFileClip, CompositeAudioClip
+    from moviepy import AudioFileClip, CompositeAudioClip
     
     try:
         audio_clips = []
         
         # Keep original video audio if it exists, but reduce volume
         if video_clip.audio:
-            # Reduce the original audio volume so commentary is clearer
-            reduced_original = video_clip.audio.volumex(original_audio_volume)
+            # FIXED: volumex → with_volume_scaled
+            reduced_original = video_clip.audio.with_volume_scaled(original_audio_volume)
             audio_clips.append(reduced_original)
         
         # Add each commentary segment
         for segment in commentary_segments:
             commentary = AudioFileClip(segment['audio_path'])
             
-            # Set start time
-            commentary = commentary.set_start(segment.get('start_time', 0))
+            # FIXED: set_start → with_start
+            commentary = commentary.with_start(segment.get('start_time', 0))
             
             # Adjust volume if specified
             volume = segment.get('volume', 1.0)
             if volume != 1.0:
-                commentary = commentary.volumex(volume)
+                commentary = commentary.with_volume_scaled(volume)
             
             audio_clips.append(commentary)
         
         # Composite all audio
         if audio_clips:
             final_audio = CompositeAudioClip(audio_clips)
-            return video_clip.set_audio(final_audio)
+            return video_clip.with_audio(final_audio)
         else:
             return video_clip
             
     except Exception as e:
         print(f"Error adding commentary segments: {e}")
         return video_clip
+    
 
 def analyze_video_for_suggestions(video_path):
     """
