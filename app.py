@@ -38,31 +38,34 @@ bg_url = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920"  
 st.markdown(f"""
 <style>
     :root {{
-        --primary-color: #3b82f6;
-        --secondary-color: #1e293b;
-        --accent-color: #10b981;
-        --accent-hover: #059669;
-        --text-primary: #f1f5f9;
-        --text-secondary: #cbd5e1;
-        --card-bg: rgba(30, 41, 59, 0.95);
-        --dark-bg: #0f172a;
-        --border-color: rgba(148, 163, 184, 0.2);
-        --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        --primary-color: #2563eb;        /* Deep sky blue */
+        --secondary-color: #0f172a;      /* Navy background */
+        --accent-color: #474516;         /* Olive button tone */
+        --accent-hover: #5a571a;
+        --text-primary: #474516;
+        --text-secondary: #a3b2c2;
+        --card-bg: rgba(15,23,42,0.9);
+        --dark-bg: #0b1120;
+        --border-color: rgba(255,255,255,0.1);
+        --shadow: 0 4px 10px rgba(0,0,0,0.5);
     }}
     
     .block-container {{
-        padding-top: 2rem !important;
-        max-width: 1400px;
+    padding-top: 3rem !important;  /* slightly more so the text isn't hidden */
     }}
 
     h1:first-of-type {{
-        margin-top: 1rem !important;
+        margin-top: 2rem !important;
     }}
+
 
     /* MAIN APP BACKGROUND */
     [data-testid="stAppViewContainer"] {{
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+        background-image: linear-gradient(rgba(10,15,30,0.9), rgba(10,15,30,0.95)), url("{bg_url}");
+        background-size: cover;
+        background-position: center;
         background-attachment: fixed;
+        background-repeat: no-repeat;
     }}
 
     [data-testid="stAppViewContainer"] > .main {{
@@ -71,221 +74,133 @@ st.markdown(f"""
         min-height: 100vh;
     }}
 
-    /* HEADERS & TEXT - HIGH CONTRAST */
+    /* HEADERS & TEXT */
     [data-testid="stHeader"] {{
-        background: rgba(15, 23, 42, 0.98);
+        background: rgba(15,23,42,0.9);
         backdrop-filter: blur(10px);
-        border-bottom: 2px solid var(--primary-color);
+        border-bottom: 1px solid var(--border-color);
     }}
 
     h1, h2, h3, h4, h5, h6 {{
-        color: #f1f5f9 !important;
+        color: var(--text-primary) !important;
         font-weight: 700 !important;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
         letter-spacing: 0.5px;
     }}
 
     h1 {{
-        color: #60a5fa !important;
-        font-size: 2.5rem !important;
-        margin-bottom: 1rem !important;
+        background: linear-gradient(135deg, var(--primary-color), #38bdf8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 2.4rem !important;
     }}
 
-    h2 {{
-        color: #93c5fd !important;
-        font-size: 2rem !important;
+    p, .stMarkdown, .stText, label {{
+        color: var(--text-secondary) !important;
+        line-height: 1.6;
     }}
 
-    h3 {{
-        color: #bfdbfe !important;
-        font-size: 1.5rem !important;
-    }}
-
-    /* TEXT - MUCH MORE VISIBLE */
-    p, .stMarkdown, .stText, label, div {{
-        color: #e2e8f0 !important;
-        line-height: 1.7;
-        font-size: 1rem;
-    }}
-
-    /* STRONGER TEXT */
-    strong, b {{
-        color: #f8fafc !important;
-        font-weight: 700;
-    }}
-
-    /* INPUT FIELDS - VISIBLE */
-    input, textarea, select {{
-        background-color: rgba(30, 41, 59, 0.9) !important;
-        color: #f1f5f9 !important;
-        border: 2px solid var(--border-color) !important;
-        border-radius: 8px !important;
-        padding: 0.75rem !important;
-    }}
-
-    input:focus, textarea:focus, select:focus {{
-        border-color: var(--primary-color) !important;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
-    }}
-
-    /* SIDEBAR - CLEAR */
+    /* SIDEBAR */
     [data-testid="stSidebar"] {{
-        background: linear-gradient(180deg, #1e293b 0%, #334155 100%);
-        border-right: 2px solid var(--primary-color);
+        background: linear-gradient(180deg, #0b1120 0%, #111827 100%);
+        border-right: 1px solid var(--border-color);
         box-shadow: var(--shadow);
     }}
 
     [data-testid="stSidebar"] h1,
     [data-testid="stSidebar"] h2,
     [data-testid="stSidebar"] h3 {{
-        color: #60a5fa !important;
+        color: #60a5fa !important;  /* changed to lighter blue */
     }}
 
-    [data-testid="stSidebar"] p,
-    [data-testid="stSidebar"] label,
-    [data-testid="stSidebar"] div {{
-        color: #e2e8f0 !important;
-    }}
-
-    /* BUTTONS - BRIGHT & CLEAR */
+    /* BUTTONS */
     .stButton > button {{
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        color: #ffffff !important;
+        background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%);
+        color: #fff !important;
         border: none;
-        border-radius: 10px;
-        padding: 0.75rem 1.5rem;
-        font-weight: 700;
-        font-size: 1rem;
-        letter-spacing: 0.5px;
+        border-radius: 8px;
+        padding: 0.65rem 1.4rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+        letter-spacing: 0.4px;
         text-transform: uppercase;
-        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
+        box-shadow: 0 2px 6px rgba(71,69,22,0.4);
         transition: all 0.3s ease;
         cursor: pointer;
     }}
-
     .stButton > button:hover {{
-        background: linear-gradient(135deg, #059669 0%, #047857 100%);
-        box-shadow: 0 6px 16px rgba(16, 185, 129, 0.6);
+        background: linear-gradient(135deg, var(--accent-hover) 0%, var(--accent-color) 100%);
+        box-shadow: 0 6px 14px rgba(71,69,22,0.6);
         transform: translateY(-2px);
     }}
-
     .stButton > button:active {{
         transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(71,69,22,0.3);
     }}
 
-    /* PRIMARY BUTTON */
+    /* PRIMARY BUTTON VARIANT */
     .stButton > button[kind="primary"] {{
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4);
+        background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%);
+        box-shadow: 0 2px 6px rgba(71,69,22,0.4);
     }}
-
     .stButton > button[kind="primary"]:hover {{
-        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-        box-shadow: 0 6px 16px rgba(59, 130, 246, 0.6);
+        background: linear-gradient(135deg, var(--accent-hover) 0%, var(--accent-color) 100%);
+        box-shadow: 0 6px 14px rgba(71,69,22,0.6);
     }}
 
-    /* SECONDARY BUTTON */
+    /* SECONDARY BUTTON VARIANT */
     .stButton > button[kind="secondary"] {{
         background: transparent;
-        border: 2px solid #60a5fa;
-        color: #60a5fa !important;
+        border: 2px solid rgba(71,69,22,0.7);
+        color: var(--text-primary) !important;
     }}
-
     .stButton > button[kind="secondary"]:hover {{
-        background: rgba(59, 130, 246, 0.2);
-        border-color: #3b82f6;
-        color: #93c5fd !important;
+        background: rgba(71,69,22,0.15);
+        border-color: var(--accent-color);
     }}
 
-    /* INFO/WARNING/ERROR BOXES - VISIBLE */
-    .stAlert {{
-        background-color: rgba(30, 41, 59, 0.95) !important;
-        border: 2px solid;
-        border-radius: 10px;
-        padding: 1rem;
-        color: #f1f5f9 !important;
-    }}
-
-    [data-baseweb="notification"] {{
-        background-color: rgba(30, 41, 59, 0.95) !important;
-        color: #f1f5f9 !important;
-    }}
-
-    /* SUCCESS */
-    .stSuccess {{
-        border-color: #10b981 !important;
-        background-color: rgba(16, 185, 129, 0.15) !important;
-    }}
-
-    /* WARNING */
-    .stWarning {{
-        border-color: #f59e0b !important;
-        background-color: rgba(245, 158, 11, 0.15) !important;
-    }}
-
-    /* ERROR */
-    .stError {{
-        border-color: #ef4444 !important;
-        background-color: rgba(239, 68, 68, 0.15) !important;
-    }}
-
-    /* INFO */
-    .stInfo {{
-        border-color: #3b82f6 !important;
-        background-color: rgba(59, 130, 246, 0.15) !important;
-    }}
-
-    /* EXPANDERS - VISIBLE */
-    [data-testid="stExpander"] {{
-        background-color: rgba(30, 41, 59, 0.8);
-        border: 2px solid var(--border-color);
-        border-radius: 10px;
-        margin: 0.5rem 0;
-    }}
-
-    [data-testid="stExpander"] summary {{
-        color: #f1f5f9 !important;
-        font-weight: 600;
-    }}
-
-    /* TABLES - READABLE */
-    .dataframe {{
-        background-color: rgba(30, 41, 59, 0.9) !important;
-        color: #f1f5f9 !important;
-    }}
-
+    /* TABLES */
     .dataframe thead tr th {{
-        background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
-        color: #ffffff !important;
-        font-weight: 700 !important;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important;
+        color: #fff !important;
         border: none !important;
-        padding: 1rem !important;
     }}
-
-    .dataframe tbody tr {{
-        background-color: rgba(30, 41, 59, 0.6) !important;
-        color: #e2e8f0 !important;
-    }}
-
     .dataframe tbody tr:nth-of-type(even) {{
-        background-color: rgba(51, 65, 85, 0.6) !important;
+        background-color: rgba(255,255,255,0.03) !important;
     }}
-
     .dataframe tbody tr:hover {{
-        background-color: rgba(59, 130, 246, 0.2) !important;
+        background-color: rgba(71,69,22,0.15) !important;
     }}
 
-    .dataframe tbody td {{
-        color: #e2e8f0 !important;
-        padding: 0.75rem !important;
+    /* FORMS */
+    [data-testid="stForm"] {{
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: var(--shadow);
     }}
 
-    /* CONTAINERS & CARDS */
-    [data-testid="stVerticalBlock"] > div {{
-        background-color: rgba(30, 41, 59, 0.6);
-        border-radius: 10px;
-        padding: 1rem;
-        margin: 0.5rem 0;
+    /* FOOTER */
+    .footer {{
+        background: linear-gradient(135deg, rgba(20,25,45,0.95), rgba(35,40,70,0.95));
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-top: 3rem;
+        text-align: center;
+        color: #f8fafc !important;
+        font-size: 0.9rem;
+        font-weight: 500;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    }}
+    .footer a {{
+        color: #60a5fa !important;
+        text-decoration: none;
+    }}
+    .footer a:hover {{
+        color: var(--accent-color) !important;
+        text-decoration: underline;
     }}
 
     /* SMOOTH ENTRANCE */
@@ -293,49 +208,7 @@ st.markdown(f"""
         from {{ opacity: 0; transform: translateY(15px); }}
         to {{ opacity: 1; transform: translateY(0); }}
     }}
-
-    .stApp > div {{ 
-        animation: fadeIn 0.6s ease-out; 
-    }}
-
-    /* LINKS - VISIBLE */
-    a {{
-        color: #60a5fa !important;
-        text-decoration: none;
-        font-weight: 600;
-    }}
-
-    a:hover {{
-        color: #93c5fd !important;
-        text-decoration: underline;
-    }}
-
-    /* NUMBER INPUTS - VISIBLE */
-    [data-baseweb="input"] {{
-        background-color: rgba(30, 41, 59, 0.9) !important;
-    }}
-
-    [data-baseweb="input"] input {{
-        color: #f1f5f9 !important;
-    }}
-
-    /* SLIDERS - VISIBLE */
-    [data-testid="stSlider"] {{
-        color: #f1f5f9 !important;
-    }}
-
-    /* FILE UPLOADER - VISIBLE */
-    [data-testid="stFileUploader"] {{
-        background-color: rgba(30, 41, 59, 0.8);
-        border: 2px dashed var(--primary-color);
-        border-radius: 10px;
-        padding: 2rem;
-    }}
-
-    [data-testid="stFileUploader"] label {{
-        color: #f1f5f9 !important;
-        font-weight: 600;
-    }}
+    .stApp > div {{ animation: fadeIn 0.6s ease-out; }}
 </style>
 """, unsafe_allow_html=True)
 
