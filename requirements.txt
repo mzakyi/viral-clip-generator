@@ -7,9 +7,4 @@ youtube-transcript-api==0.6.1
 Pillow>=10.0.0
 numpy<2.0.0,>=1.24.4
 ffmpeg-python==0.2.0
-rich==14.2.0
-markdown-it-py==4.0.0
-pygments==2.19.2
-mdurl==0.1.2
-
 
