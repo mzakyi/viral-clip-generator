@@ -9,3 +9,5 @@ numpy<2.0.0,>=1.24.4
 ffmpeg-python==0.2.0
 imageio-ffmpeg>=0.4.7
 opencv-python-headless==4.10.0.84
+librosa>=0.10.0
+gTTS>=2.3.0
