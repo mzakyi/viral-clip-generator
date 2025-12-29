@@ -261,9 +261,9 @@ from moviepy import (
     VideoFileClip,
     concatenate_videoclips,
     TextClip,
-    CompositeVideoClip
+    CompositeVideoClip,
+    AudioFileClip
 )
-
 from video_processor import (
     split_clip, 
     add_freeze_frame, 
@@ -274,7 +274,6 @@ from video_processor import (
     create_clip, 
     get_all_clips, 
     cleanup_downloads,
-    add_commentary_audio,
     add_multiple_text_overlays,
     add_intro_outro_overlay,
     add_zoom_effect,
@@ -284,9 +283,8 @@ from video_processor import (
     add_multiple_commentary_segments,
     analyze_video_for_suggestions,
     auto_optimize_video,
-    analyze_video_content_for_commentary
+    analyze_video_for_suggestions
 )
-
 import random
 from viral_moment_detector import ViralMomentDetector
 from audio_energy_detector import (
@@ -397,7 +395,7 @@ st.markdown("---")
 # Sidebar navigation
 page = st.sidebar.selectbox(
     "Choose a feature:",
-    ["🔥 Discover Viral Videos", "🤖 AI Viral Moments", "✂️ Clip Generator", "💰 Monetization Prep", "🔍 Monetization Checker", "👥 Creator Inspiration", "💰 Monetization Dashboard"]
+    ["🔥 Discover Viral Videos", "🤖 AI Viral Moments", "✂️ Clip Generator", "💰 Monetization Prep", "🔍 Monetization Checker"]
 )
 
 # ====== DISCOVER VIRAL VIDEOS PAGE ======
@@ -700,7 +698,6 @@ elif page == "💰 Monetization Prep":
         # Preview video
         st.video(temp_input_path)
         
-        # ADD/UPDATE THIS SECTION 👇
         # Initialize session state for customizations (with all fields)
         if 'customizations' not in st.session_state:
             st.session_state.customizations = {
@@ -723,9 +720,7 @@ elif page == "💰 Monetization Prep":
         if 'original_audio_volume' not in st.session_state.customizations:
             st.session_state.customizations['original_audio_volume'] = 0.3
         
-        # ... continue with AI suggestions and tabs ...
-        
-            # ADD THIS NEW SECTION HERE
+        # AI Suggestions Section
         st.markdown("---")
         st.subheader("🤖 AI-Powered Customization Suggestions")
         
@@ -763,13 +758,13 @@ elif page == "💰 Monetization Prep":
                     
                     st.markdown("---")
         
-        # THEN continue with existing tabs section...
         st.markdown("---")
         st.subheader("🎨 Add Transformative Elements")
 
-
         # Tabs for different customization options
         tab1, tab2, tab3, tab4 = st.tabs(["🎙️ Commentary", "📝 Text Overlays", "🎬 Intro/Outro", "🎨 Effects"])
+        
+
         
         # Initialize session state for customizations
         if 'customizations' not in st.session_state:
@@ -780,9 +775,7 @@ elif page == "💰 Monetization Prep":
                 'outro_text': '',
                 'add_zoom': False
             }
-        
-        # TAB 1: Commentary Audio
-        # TAB 1: Commentary Audio
+        # TAB 1: Commentary Audio (continuation from part 1)
         with tab1:
             st.markdown("### 🎙️ Add Voice Commentary")
             st.info("💡 Add commentary at different points in your video for maximum engagement")
@@ -793,12 +786,7 @@ elif page == "💰 Monetization Prep":
                 horizontal=True
             )
             
-            # Initialize commentary segments in session state
-            if 'commentary_segments' not in st.session_state.customizations:
-                st.session_state.customizations['commentary_segments'] = []
-            
             st.markdown("---")
-                # ADD THIS NEW SECTION HERE 👇
             st.subheader("🔊 Audio Mixing Settings")
             
             original_volume = st.slider(
@@ -819,8 +807,6 @@ elif page == "💰 Monetization Prep":
                 st.info("💡 Consider lowering for better commentary clarity")
             
             st.markdown("---")
-            # END OF NEW SECTION
-            
             st.subheader("Commentary Segments")
             
             # Add new segment
@@ -866,7 +852,6 @@ elif page == "💰 Monetization Prep":
                                 result = generate_ai_voice(commentary_text, temp_audio_path)
                                 
                                 if result['success']:
-                                    # Add to segments
                                     st.session_state.customizations['commentary_segments'].append({
                                         'audio_path': result['path'],
                                         'start_time': segment_start,
@@ -923,7 +908,6 @@ elif page == "💰 Monetization Prep":
                 
                 st.success(f"✅ {len(st.session_state.customizations['commentary_segments'])} commentary segment(s) ready!")
                 
-                    # ADD THIS NEW SECTION 👇
                 st.markdown("---")
                 if st.button("🗑️ Clear All Commentary Segments", type="secondary"):
                     st.session_state.customizations['commentary_segments'] = []
@@ -933,14 +917,9 @@ elif page == "💰 Monetization Prep":
                 st.info("No commentary segments added yet. Add your first one above!")
         
         # TAB 2: Text Overlays
-        # TAB 2: Text Overlays
         with tab2:
             st.markdown("### 📝 Add Text Overlays")
             st.info("Add context, facts, or commentary as text on screen")
-            
-            # Initialize text overlays in session state if not exists
-            if 'text_overlays' not in st.session_state.customizations:
-                st.session_state.customizations['text_overlays'] = []
             
             st.markdown("---")
             
@@ -978,7 +957,6 @@ elif page == "💰 Monetization Prep":
                 
                 if new_text:
                     if st.button("➕ Add This Overlay", type="primary"):
-                        # Add to session state
                         st.session_state.customizations['text_overlays'].append({
                             'text': new_text,
                             'start_time': new_start,
@@ -1018,15 +996,12 @@ elif page == "💰 Monetization Prep":
             else:
                 st.info("No text overlays added yet. Add your first one above!")
             
-            
-            # ADD THIS NEW SECTION 👇
             if st.session_state.customizations['text_overlays']:
                 st.markdown("---")
                 if st.button("🗑️ Clear All Text Overlays", type="secondary"):
                     st.session_state.customizations['text_overlays'] = []
                     st.success("✅ All text overlays cleared!")
                     st.rerun()
-            
        
         # TAB 3: Intro/Outro
         with tab3:
@@ -1062,7 +1037,6 @@ elif page == "💰 Monetization Prep":
             if intro_text or outro_text:
                 st.success("✅ Intro/Outro text configured!")
             
-                # ADD THIS NEW SECTION 👇
             st.markdown("---")
             if st.button("🗑️ Clear Intro & Outro", type="secondary"):
                 st.session_state.customizations['intro_text'] = ''
@@ -1085,8 +1059,6 @@ elif page == "💰 Monetization Prep":
         st.markdown("---")
         st.subheader("🚀 Generate Monetization-Ready Clip")
         
-
-        # ADD THIS NEW SECTION 👇
         col_reset, col_process = st.columns([1, 2])
 
         with col_reset:
@@ -1109,22 +1081,32 @@ elif page == "💰 Monetization Prep":
             if st.button("🎬 Process & Download", type="primary", use_container_width=True):
                 with st.spinner("Processing your clip... This may take 2-3 minutes..."):
                     try:
-                        
-                        # Load video
+                        st.write("🔍 DEBUG: Starting processing...")
                         clip = VideoFileClip(temp_input_path)
+                        st.write(f"✅ Original clip loaded: {clip.duration:.1f}s")
                         
                         # Apply customizations in order
                         
                         # 1. Add text overlays
                         if st.session_state.customizations['text_overlays']:
+                            st.write(f"📝 DEBUG: Adding {len(st.session_state.customizations['text_overlays'])} text overlays...")
+                            original_clip = clip
                             clip = add_multiple_text_overlays(clip, st.session_state.customizations['text_overlays'])
+                            st.write(f"✅ Text overlays applied. Clip is now: {type(clip)}")
+                        else:
+                            st.write("⏭️ No text overlays to add")
                         
                         # 2. Add zoom effect
                         if st.session_state.customizations['add_zoom']:
+                            st.write("🔍 DEBUG: Adding zoom effect...")
                             clip = add_zoom_effect(clip, zoom_factor=1.15)
+                            st.write("✅ Zoom effect applied")
+                        else:
+                            st.write("⏭️ No zoom effect to add")
                         
                         # 3. Add intro/outro overlays
                         if st.session_state.customizations['intro_text'] or st.session_state.customizations['outro_text']:
+                            st.write(f"🎬 DEBUG: Adding intro/outro (intro: '{st.session_state.customizations['intro_text'][:20]}...', outro: '{st.session_state.customizations['outro_text'][:20]}...')")
                             clip = add_intro_outro_overlay(
                                 clip,
                                 intro_text=st.session_state.customizations['intro_text'],
@@ -1132,24 +1114,58 @@ elif page == "💰 Monetization Prep":
                                 intro_duration=st.session_state.customizations.get('intro_duration', 3),
                                 outro_duration=st.session_state.customizations.get('outro_duration', 3)
                             )
+                            st.write("✅ Intro/outro applied")
+                        else:
+                            st.write("⏭️ No intro/outro to add")
                         
                         # 4. Add commentary audio (multiple segments) with volume control
                         if st.session_state.customizations.get('commentary_segments'):
+                            st.write(f"🎙️ DEBUG: Adding {len(st.session_state.customizations['commentary_segments'])} commentary segments...")
                             original_volume = st.session_state.customizations.get('original_audio_volume', 0.3)
                             clip = add_multiple_commentary_segments(
                                 clip, 
                                 st.session_state.customizations['commentary_segments'],
                                 original_audio_volume=original_volume
                             )
+                            st.write("✅ Commentary applied")
+                        else:
+                            st.write("⏭️ No commentary to add")
                         
+                        st.write(f"✅ All customizations applied. Final clip type: {type(clip)}")
+                        st.write(f"✅ Final clip duration: {clip.duration:.1f}s")
+                        st.write(f"✅ Final clip has audio: {clip.audio is not None}")
+                        
+                        # Export final video
                         # Export final video
                         output_dir = 'monetization_ready'
                         os.makedirs(output_dir, exist_ok=True)
-                        
+
                         timestamp = int(time.time())
                         output_path = os.path.join(output_dir, f'monetization_ready_{timestamp}.mp4')
-                        
-                        clip.write_videofile(output_path, codec='libx264', audio_codec='aac', fps=30)
+
+                        st.write(f"💾 DEBUG: Preparing clip for export...")
+                        st.write(f"   - Clip type: {type(clip)}")
+                        st.write(f"   - Clip duration: {clip.duration}")
+
+                        # Force composite to render properly
+                        try:
+                            st.write("🔄 DEBUG: Testing clip rendering...")
+                            test_frame = clip.get_frame(0)
+                            st.write(f"✅ Test frame shape: {test_frame.shape}")
+                        except Exception as e:
+                            st.warning(f"Could not get test frame: {e}")
+
+                        st.write(f"💾 DEBUG: Writing video to: {output_path}")
+
+                        # Write the video
+                        clip.write_videofile(
+                            output_path, 
+                            codec='libx264', 
+                            audio_codec='aac', 
+                            fps=30
+                        )
+
+                        st.write("✅ Video written successfully!")
                         
                         # Close clips
                         clip.close()
@@ -1169,7 +1185,6 @@ elif page == "💰 Monetization Prep":
                         
                         st.balloons()
                         
-                        
                         # Cleanup temp files
                         try:
                             os.remove(temp_input_path)
@@ -1180,8 +1195,11 @@ elif page == "💰 Monetization Prep":
                         
                     except Exception as e:
                         st.error(f"❌ Error processing clip: {str(e)}")
+                        import traceback
+                        st.code(traceback.format_exc())
                         st.error("Please try again or contact support if the issue persists.")
-                    
+    
+    
 # ====== MONETIZATION VERIFICATION PAGE ======
 elif page == "🔍 Monetization Checker":
     st.header("🔍 Monetization Verification Scanner")
@@ -1267,7 +1285,7 @@ elif page == "🔍 Monetization Checker":
             
             st.markdown("---")
             
-            # AUTO-OPTIMIZE SECTION - NEW! 🚀
+            # AUTO-OPTIMIZE SECTION
             if not analysis['scores']['pass_status']:
                 st.error("### ⚠️ Your video needs improvement")
                 st.info("💡 **Good news!** We can automatically optimize your video based on AI recommendations!")
@@ -1295,11 +1313,9 @@ elif page == "🔍 Monetization Checker":
                     with col_opt1:
                         if st.button("🚀 Auto-Optimize My Video", type="primary", use_container_width=True):
                             with st.spinner("🎨 Optimizing your video... This may take 2-3 minutes..."):
-                                # Get AI suggestions first
                                 suggestions_result = analyze_video_for_suggestions(st.session_state.verification_path)
                                 
                                 if suggestions_result['success']:
-                                    # Apply auto-optimization
                                     optimize_result = auto_optimize_video(
                                         st.session_state.verification_path,
                                         suggestions_result['suggestions'],
@@ -1307,7 +1323,6 @@ elif page == "🔍 Monetization Checker":
                                     )
                                     
                                     if optimize_result['success']:
-                                        # Export optimized video
                                         output_dir = 'optimized_videos'
                                         os.makedirs(output_dir, exist_ok=True)
                                         
@@ -1356,7 +1371,6 @@ elif page == "🔍 Monetization Checker":
                             )
                         
                         if st.button("🔄 Re-verify Optimized Video", use_container_width=True):
-                            # Clear previous analysis
                             del st.session_state.verification_analysis
                             st.session_state.verification_path = st.session_state.optimized_video_path
                             st.info("Upload the optimized video above to verify the new score!")
@@ -1364,7 +1378,6 @@ elif page == "🔍 Monetization Checker":
                     st.info("💡 **Tip:** Re-verify your optimized video to see the improved score!")
             
             else:
-                # Video passed - show success options
                 st.success("### ✅ Your video is ready to monetize!")
                 st.balloons()
                 
@@ -1373,7 +1386,6 @@ elif page == "🔍 Monetization Checker":
                     st.info("💡 **Tip:** Always monitor for copyright claims after upload")
                 with col_b:
                     if st.button("🔄 Check Another Video", use_container_width=True):
-                        # Clear session state
                         if 'verification_analysis' in st.session_state:
                             del st.session_state.verification_analysis
                         if 'optimized_video_path' in st.session_state:
@@ -1381,7 +1393,6 @@ elif page == "🔍 Monetization Checker":
                         st.rerun()
     
     else:
-        # Show example scores
         st.info("### 📊 Understanding the Scores")
         
         col1, col2, col3 = st.columns(3)
@@ -1412,18 +1423,6 @@ elif page == "🔍 Monetization Checker":
         
         st.markdown("---")
         st.info("💡 **Pro Tip:** Videos scoring 70+ with good audio modification are typically safe to monetize!")
-        
-        st.markdown("---")
-        st.success("### 🚀 New Feature: Auto-Optimize!")
-        st.markdown("""
-        If your video doesn't pass, we can **automatically optimize** it for you:
-        - Adds AI voice commentary
-        - Adds text overlays at perfect moments
-        - Adds professional intro/outro
-        - Optimizes audio mixing
-        
-        Just upload, analyze, and click "Auto-Optimize"!
-        """)
         
 
 elif page == "🤖 AI Viral Moments":
@@ -1468,7 +1467,6 @@ elif page == "🤖 AI Viral Moments":
                         audio_path = audio_result['path']
                         energy_moments = detect_energy_peaks(audio_path)
                         
-                        # Cleanup
                         try:
                             os.remove(audio_path)
                         except:
@@ -1485,7 +1483,6 @@ elif page == "🤖 AI Viral Moments":
                         st.error(f"Audio download failed: {audio_result.get('error')}")
                         top_moments = []
 
-            # Show top moments for clipping (works for both methods)
             if 'top_moments' in locals() and top_moments:
                 st.subheader("🏆 Top Moments (Click to Create Clip)")
                 for i, moment in enumerate(top_moments):
@@ -1508,6 +1505,3 @@ elif page == "🤖 AI Viral Moments":
     if 'analyze_url' in st.session_state and st.button("🗑️ Clear Video"):
         del st.session_state.analyze_url
         st.rerun()
-
-
- 
