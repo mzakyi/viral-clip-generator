@@ -206,8 +206,8 @@ def add_multiple_text_overlays(clip, text_overlays):
                 color='white',
                 font=font_path,
                 stroke_color='black',
-                stroke_width=4,
-                size=(int(clip.w * 0.85), None),
+                stroke_width=3,
+                size=(int(clip.w * 0.80), None),
                 method='caption'
             )
             
@@ -281,15 +281,16 @@ def add_intro_outro_overlay(video_clip, intro_text='', outro_text='',
             
             intro_clip = TextClip(
                 text=intro_text,
-                font_size=45,  # ← Changed from fontsize
-                color='white',
+                font_size=40,  # ← Changed from fontsize
+                color='cyan',
                 font=font_path,
                 stroke_color='black',
                 stroke_width=3,
-                size=(int(video_clip.w * 0.85), None),
+                size=(int(video_clip.w * 0.80), None),
                 method='caption'
             )
             
+
             actual_intro_duration = min(intro_duration, video_clip.duration)
             
             intro_clip = intro_clip.with_position('center')
@@ -310,12 +311,12 @@ def add_intro_outro_overlay(video_clip, intro_text='', outro_text='',
             
             outro_clip = TextClip(
                 text=outro_text,
-                font_size=45,  # ← Changed from fontsize
-                color='white',
+                font_size=40,  # ← Changed from fontsize
+                color='cyan',
                 font=font_path,
                 stroke_color='black',
                 stroke_width=3,
-                size=(int(video_clip.w * 0.85), None),
+                size=(int(video_clip.w * 0.80), None),
                 method='caption'
             )
             
