@@ -1083,59 +1083,85 @@ elif page == "💰 Monetization Prep":
                     try:
                         st.write("🔍 DEBUG: Starting processing...")
                         clip = VideoFileClip(temp_input_path)
-                        st.write(f"✅ Original clip loaded: {clip.duration:.1f}s")
+                        st.write(f"✅ Original clip loaded: {clip.duration:.1f}s, size: {clip.size}")
                         
-                        # Apply customizations in order
+                        # Show what customizations are queued
+                        st.write("📋 Queued customizations:")
+                        st.write(f"  - Text overlays: {len(st.session_state.customizations.get('text_overlays', []))}")
+                        st.write(f"  - Intro text: {bool(st.session_state.customizations.get('intro_text'))}")
+                        st.write(f"  - Outro text: {bool(st.session_state.customizations.get('outro_text'))}")
+                        st.write(f"  - Commentary segments: {len(st.session_state.customizations.get('commentary_segments', []))}")
+                        st.write(f"  - Zoom effect: {st.session_state.customizations.get('add_zoom', False)}")
                         
-                        # 1. Add text overlays
-                        if st.session_state.customizations['text_overlays']:
-                            st.write(f"📝 DEBUG: Adding {len(st.session_state.customizations['text_overlays'])} text overlays...")
-                            original_clip = clip
-                            clip = add_multiple_text_overlays(clip, st.session_state.customizations['text_overlays'])
-                            st.write(f"✅ Text overlays applied. Clip is now: {type(clip)}")
+                        # STEP 1: Add text overlays FIRST
+                        if st.session_state.customizations.get('text_overlays'):
+                            overlays = st.session_state.customizations['text_overlays']
+                            st.write(f"\n📝 STEP 1: Adding {len(overlays)} text overlays...")
+                            for i, overlay in enumerate(overlays):
+                                st.write(f"  Overlay {i+1}: '{overlay.get('text')}' at {overlay.get('start_time')}s-{overlay.get('end_time')}s")
+                            
+                            clip = add_multiple_text_overlays(clip, overlays)
+                            st.write(f"✅ Text overlays applied")
                         else:
-                            st.write("⏭️ No text overlays to add")
+                            st.write("\n⏭️ STEP 1: No text overlays to add")
                         
-                        # 2. Add zoom effect
-                        if st.session_state.customizations['add_zoom']:
-                            st.write("🔍 DEBUG: Adding zoom effect...")
-                            clip = add_zoom_effect(clip, zoom_factor=1.15)
-                            st.write("✅ Zoom effect applied")
-                        else:
-                            st.write("⏭️ No zoom effect to add")
+                        # STEP 2: Add intro/outro SECOND
+                        intro = st.session_state.customizations.get('intro_text', '')
+                        outro = st.session_state.customizations.get('outro_text', '')
                         
-                        # 3. Add intro/outro overlays
-                        if st.session_state.customizations['intro_text'] or st.session_state.customizations['outro_text']:
-                            st.write(f"🎬 DEBUG: Adding intro/outro (intro: '{st.session_state.customizations['intro_text'][:20]}...', outro: '{st.session_state.customizations['outro_text'][:20]}...')")
+                        if intro or outro:
+                            st.write(f"\n🎬 STEP 2: Adding intro/outro...")
+                            if intro:
+                                st.write(f"  Intro: '{intro}' ({st.session_state.customizations.get('intro_duration', 3)}s)")
+                            if outro:
+                                st.write(f"  Outro: '{outro}' ({st.session_state.customizations.get('outro_duration', 3)}s)")
+                            
                             clip = add_intro_outro_overlay(
                                 clip,
-                                intro_text=st.session_state.customizations['intro_text'],
-                                outro_text=st.session_state.customizations['outro_text'],
+                                intro_text=intro,
+                                outro_text=outro,
                                 intro_duration=st.session_state.customizations.get('intro_duration', 3),
                                 outro_duration=st.session_state.customizations.get('outro_duration', 3)
                             )
-                            st.write("✅ Intro/outro applied")
+                            st.write(f"✅ Intro/outro applied")
                         else:
-                            st.write("⏭️ No intro/outro to add")
+                            st.write("\n⏭️ STEP 2: No intro/outro to add")
                         
-                        # 4. Add commentary audio (multiple segments) with volume control
+                        # STEP 3: Add zoom effect THIRD (if enabled)
+                        if st.session_state.customizations.get('add_zoom'):
+                            st.write("\n🔍 STEP 3: Adding zoom effect...")
+                            clip = add_zoom_effect(clip, zoom_factor=1.15)
+                            st.write(f"✅ Zoom effect applied")
+                        else:
+                            st.write("\n⏭️ STEP 3: No zoom effect to add")
+                        
+                        # STEP 4: Add commentary audio LAST
                         if st.session_state.customizations.get('commentary_segments'):
-                            st.write(f"🎙️ DEBUG: Adding {len(st.session_state.customizations['commentary_segments'])} commentary segments...")
+                            segments = st.session_state.customizations['commentary_segments']
+                            st.write(f"\n🎙️ STEP 4: Adding {len(segments)} commentary segments...")
+                            for i, seg in enumerate(segments):
+                                st.write(f"  Commentary {i+1} at {seg.get('start_time')}s")
+                            
                             original_volume = st.session_state.customizations.get('original_audio_volume', 0.3)
                             clip = add_multiple_commentary_segments(
                                 clip, 
-                                st.session_state.customizations['commentary_segments'],
+                                segments,
                                 original_audio_volume=original_volume
                             )
-                            st.write("✅ Commentary applied")
+                            st.write(f"✅ Commentary applied")
                         else:
-                            st.write("⏭️ No commentary to add")
+                            st.write("\n⏭️ STEP 4: No commentary to add")
                         
-                        st.write(f"✅ All customizations applied. Final clip type: {type(clip)}")
-                        st.write(f"✅ Final clip duration: {clip.duration:.1f}s")
-                        st.write(f"✅ Final clip has audio: {clip.audio is not None}")
+                        # Final verification
+                        st.write(f"\n✅ All customizations applied!")
+                        st.write(f"   Final clip duration: {clip.duration:.1f}s")
+                        st.write(f"   Final clip size: {clip.size}")
+                        st.write(f"   Final clip has audio: {clip.audio is not None}")
                         
-                        # Export final video
+                        # Check if it's a composite
+                        if isinstance(clip, CompositeVideoClip):
+                            st.write(f"   Composite with {len(clip.clips)} clips")
+                        
                         # Export final video
                         output_dir = 'monetization_ready'
                         os.makedirs(output_dir, exist_ok=True)
@@ -1143,35 +1169,32 @@ elif page == "💰 Monetization Prep":
                         timestamp = int(time.time())
                         output_path = os.path.join(output_dir, f'monetization_ready_{timestamp}.mp4')
 
-                        st.write(f"💾 DEBUG: Preparing clip for export...")
-                        st.write(f"   - Clip type: {type(clip)}")
-                        st.write(f"   - Clip duration: {clip.duration}")
+                        st.write(f"\n💾 Exporting video to: {output_path}")
+                        st.write("   This may take 2-3 minutes...")
 
-                        # Force composite to render properly
-                        try:
-                            st.write("🔄 DEBUG: Testing clip rendering...")
-                            test_frame = clip.get_frame(0)
-                            st.write(f"✅ Test frame shape: {test_frame.shape}")
-                        except Exception as e:
-                            st.warning(f"Could not get test frame: {e}")
-
-                        st.write(f"💾 DEBUG: Writing video to: {output_path}")
-
-                        # Write the video
+                        # Write the video with explicit codec settings
                         clip.write_videofile(
-                            output_path, 
-                            codec='libx264', 
-                            audio_codec='aac', 
-                            fps=30
+                            output_path,
+                            codec='libx264',
+                            audio_codec='aac',
+                            fps=30,
+                            preset='medium',
+                            bitrate='5000k',
+                            threads=4,
+                            logger=None  # Suppress moviepy's progress bar
                         )
 
-                        st.write("✅ Video written successfully!")
+                        st.write("✅ Video export complete!")
                         
-                        # Close clips
+                        # Close clips to free memory
                         clip.close()
                         video.close()
                         
                         st.success("🎉 Your monetization-ready clip is complete!")
+                        
+                        # Provide file info
+                        file_size_mb = os.path.getsize(output_path) / (1024 * 1024)
+                        st.info(f"📁 File size: {file_size_mb:.2f} MB")
                         
                         # Download button
                         with open(output_path, 'rb') as file:
@@ -1188,17 +1211,20 @@ elif page == "💰 Monetization Prep":
                         # Cleanup temp files
                         try:
                             os.remove(temp_input_path)
-                            if st.session_state.customizations['commentary_audio']:
-                                os.remove(st.session_state.customizations['commentary_audio'])
-                        except:
-                            pass
+                            if st.session_state.customizations.get('commentary_segments'):
+                                for segment in st.session_state.customizations['commentary_segments']:
+                                    if os.path.exists(segment['audio_path']):
+                                        os.remove(segment['audio_path'])
+                        except Exception as cleanup_error:
+                            st.warning(f"Note: Some temporary files couldn't be cleaned up: {cleanup_error}")
                         
                     except Exception as e:
                         st.error(f"❌ Error processing clip: {str(e)}")
                         import traceback
-                        st.code(traceback.format_exc())
-                        st.error("Please try again or contact support if the issue persists.")
-    
+                        error_details = traceback.format_exc()
+                        st.code(error_details)
+                        
+
     
 # ====== MONETIZATION VERIFICATION PAGE ======
 elif page == "🔍 Monetization Checker":

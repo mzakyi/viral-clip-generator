@@ -143,27 +143,75 @@ def add_text_overlay(video_clip, text, position='center', fontsize=50, color='ye
         print(f"Error adding text overlay: {e}")
         return video_clip
 
+"""
+Add this to video_processor.py to diagnose the issue
+"""
+
+def diagnose_clip(clip, label="Clip"):
+    """Diagnose a clip's properties"""
+    print(f"\n{'='*50}")
+    print(f"DIAGNOSING: {label}")
+    print(f"{'='*50}")
+    print(f"Type: {type(clip).__name__}")
+    print(f"Duration: {clip.duration:.2f}s")
+    print(f"Size: {clip.size}")
+    print(f"Has audio: {clip.audio is not None}")
+    
+    # Check if it's a composite
+    if isinstance(clip, CompositeVideoClip):
+        print(f"Number of clips in composite: {len(clip.clips)}")
+        for idx, subclip in enumerate(clip.clips):
+            print(f"  Clip {idx}: {type(subclip).__name__}")
+            if hasattr(subclip, 'txt'):
+                print(f"    → Text: {subclip.txt}")
+            if hasattr(subclip, 'start'):
+                print(f"    → Start: {subclip.start}")
+            if hasattr(subclip, 'duration'):
+                print(f"    → Duration: {subclip.duration}")
+            if hasattr(subclip, 'pos'):
+                print(f"    → Position: {subclip.pos}")
+    
+    print(f"{'='*50}\n")
+    return clip
+
 def add_multiple_text_overlays(clip, text_overlays):
-    """Add multiple text overlays at different times"""
+    """Add multiple text overlays - FIXED for MoviePy 2.x"""
     print(f"📝 Adding {len(text_overlays)} text overlays...")
-    video_clips = [clip]
+    
+    if not text_overlays:
+        print("⏭️ No text overlays to add")
+        return clip
+    
     font_path = get_available_font()
+    all_clips = [clip]
     
     for idx, overlay in enumerate(text_overlays):
         overlay_text = overlay.get('text', '')
         overlay_fontsize = overlay.get('fontsize', 50)
         overlay_color = overlay.get('color', 'yellow')
+        start_time = overlay.get('start_time', 0)
+        end_time = overlay.get('end_time', clip.duration)
+        
+        if not overlay_text:
+            print(f"  ⚠️ Skipping overlay #{idx+1}: empty text")
+            continue
         
         try:
-            txt_clip = create_text_clip_safe(
+            print(f"  Creating overlay #{idx+1}: '{overlay_text}'")
+            
+            # MoviePy 2.x syntax
+            txt_clip = TextClip(
                 text=overlay_text,
-                fontsize=overlay_fontsize,
-                color=overlay_color,
+                font_size=overlay_fontsize,  # ← Changed from fontsize
+                color='white',
                 font=font_path,
                 stroke_color='black',
-                stroke_width=2
+                stroke_width=4,
+                size=(int(clip.w * 0.85), None),
+                method='caption'
             )
             
+            # Calculate position
             position = overlay.get('position', 'center')
             if position == 'top':
                 pos = ('center', int(clip.h * 0.15))
@@ -172,111 +220,228 @@ def add_multiple_text_overlays(clip, text_overlays):
             else:
                 pos = 'center'
             
-            # CRITICAL: Set position, start, and duration in correct order for MoviePy 2.x
-            txt_clip = (txt_clip
-                .with_position(pos)
-                .with_start(overlay.get('start_time', 0))
-                .with_duration(overlay.get('end_time', clip.duration) - overlay.get('start_time', 0))
-            )
+            # Calculate duration
+            duration = min(end_time - start_time, clip.duration - start_time)
             
-            video_clips.append(txt_clip)
-            print(f"  ✅ Added text overlay #{idx+1}: '{overlay_text}' at {overlay.get('start_time', 0)}s")
+            if duration <= 0:
+                print(f"  ⚠️ Skipping overlay #{idx+1}: invalid duration")
+                continue
+            
+            # Set properties using MoviePy 2.x methods
+            txt_clip = txt_clip.with_position(pos)
+            txt_clip = txt_clip.with_start(start_time)
+            txt_clip = txt_clip.with_duration(duration)
+            
+            all_clips.append(txt_clip)
+            print(f"  ✅ Added overlay #{idx+1}: '{overlay_text}' at {start_time}s-{end_time}s, pos={position}")
+            
         except Exception as e:
-            print(f"  ⚠️ Warning: Failed to add text overlay #{idx+1}: {e}")
+            print(f"  ❌ Failed to add overlay #{idx+1}: {e}")
+            import traceback
+            traceback.print_exc()
             continue
     
-    # Create composite with explicit size
-    result = CompositeVideoClip(video_clips, size=clip.size)
-    print(f"✅ Text overlays composite created with size {result.size}")
-    return result
+    if len(all_clips) == 1:
+        print("⚠️ No text overlays were successfully added")
+        return clip
+    
+    try:
+        # Create composite
+        print(f"Creating composite with {len(all_clips)} clips...")
+        result = CompositeVideoClip(all_clips, size=clip.size)
+        
+        # Preserve audio
+        if clip.audio:
+            result = result.with_audio(clip.audio)
+        
+        print(f"✅ Text overlay composite created with {len(all_clips)} clips")
+        return result
+        
+    except Exception as e:
+        print(f"❌ Error creating composite: {e}")
+        import traceback
+        traceback.print_exc()
+        return clip
+
 def add_intro_outro_overlay(video_clip, intro_text='', outro_text='', 
                             intro_duration=3, outro_duration=3):
-    """Add intro and outro text overlays ON TOP of existing video"""
+    """Add intro/outro overlays - FIXED for MoviePy 2.x"""
     print(f"🎬 Adding intro/outro overlays...")
     
+    if not intro_text and not outro_text:
+        print("⏭️ No intro/outro to add")
+        return video_clip
+    
     font_path = get_available_font()
-    video_width, video_height = video_clip.size
-    clips = [video_clip]
+    all_clips = [video_clip]
     
     if intro_text:
         try:
-            intro_clip = create_text_clip_safe(
+            print(f"  Creating intro: '{intro_text}'")
+            
+            intro_clip = TextClip(
                 text=intro_text,
-                fontsize=60,
+                font_size=45,  # ← Changed from fontsize
                 color='white',
                 font=font_path,
                 stroke_color='black',
                 stroke_width=3,
-                size=(video_width - 40, None),
+                size=(int(video_clip.w * 0.85), None),
                 method='caption'
             )
-            # Use with_ methods for MoviePy 2.x
-            intro_clip = (intro_clip
-                .with_position('center')
-                .with_start(0)
-                .with_duration(intro_duration)
-            )
-            clips.append(intro_clip)
-            print(f"  ✅ Added intro: '{intro_text}'")
+            
+            actual_intro_duration = min(intro_duration, video_clip.duration)
+            
+            intro_clip = intro_clip.with_position('center')
+            intro_clip = intro_clip.with_start(0)
+            intro_clip = intro_clip.with_duration(actual_intro_duration)
+            
+            all_clips.append(intro_clip)
+            print(f"  ✅ Added intro: '{intro_text}' for {actual_intro_duration}s")
+            
         except Exception as e:
-            print(f"  ⚠️ Warning: Failed to add intro: {e}")
+            print(f"  ❌ Failed to add intro: {e}")
+            import traceback
+            traceback.print_exc()
     
     if outro_text:
         try:
-            outro_start = max(0, video_clip.duration - outro_duration)
+            print(f"  Creating outro: '{outro_text}'")
             
-            outro_clip = create_text_clip_safe(
+            outro_clip = TextClip(
                 text=outro_text,
-                fontsize=60,
+                font_size=45,  # ← Changed from fontsize
                 color='white',
                 font=font_path,
                 stroke_color='black',
                 stroke_width=3,
-                size=(video_width - 40, None),
+                size=(int(video_clip.w * 0.85), None),
                 method='caption'
             )
-            # Use with_ methods for MoviePy 2.x
-            outro_clip = (outro_clip
-                .with_position('center')
-                .with_start(outro_start)
-                .with_duration(outro_duration)
-            )
-            clips.append(outro_clip)
-            print(f"  ✅ Added outro: '{outro_text}'")
+            
+            outro_start = max(0, video_clip.duration - outro_duration)
+            actual_outro_duration = video_clip.duration - outro_start
+            
+            outro_clip = outro_clip.with_position('center')
+            outro_clip = outro_clip.with_start(outro_start)
+            outro_clip = outro_clip.with_duration(actual_outro_duration)
+            
+            all_clips.append(outro_clip)
+            print(f"  ✅ Added outro: '{outro_text}' at {outro_start}s for {actual_outro_duration}s")
+            
         except Exception as e:
-            print(f"  ⚠️ Warning: Failed to add outro: {e}")
+            print(f"  ❌ Failed to add outro: {e}")
+            import traceback
+            traceback.print_exc()
     
-    # Create composite with explicit size
-    result = CompositeVideoClip(clips, size=video_clip.size)
-    print(f"✅ Intro/outro composite created")
-    return result
+    if len(all_clips) == 1:
+        print("⚠️ No intro/outro was successfully added")
+        return video_clip
+    
+    try:
+        print(f"Creating composite with {len(all_clips)} clips...")
+        result = CompositeVideoClip(all_clips, size=video_clip.size)
+        
+        if video_clip.audio:
+            result = result.with_audio(video_clip.audio)
+        
+        print(f"✅ Intro/outro composite created with {len(all_clips)} clips")
+        return result
+        
+    except Exception as e:
+        print(f"❌ Error creating composite: {e}")
+        import traceback
+        traceback.print_exc()
+        return video_clip
+
+def add_multiple_commentary_segments(video_clip, commentary_segments, original_audio_volume=0.3):
+    """Add multiple commentary audio segments - FIXED for MoviePy 2.x"""
+    print(f"🎙️ Adding {len(commentary_segments)} commentary segments...")
+    
+    if not commentary_segments:
+        print("⏭️ No commentary to add")
+        return video_clip
+    
+    try:
+        audio_clips = []
+        
+        # Add reduced original audio
+        if video_clip.audio:
+            reduced_original = video_clip.audio.with_volume_scaled(original_audio_volume)
+            audio_clips.append(reduced_original)
+            print(f"  ✅ Reduced original audio to {original_audio_volume * 100}%")
+        else:
+            print("  ⚠️ Warning: Video has no audio to reduce")
+        
+        # Add commentary segments
+        for idx, segment in enumerate(commentary_segments):
+            try:
+                commentary = AudioFileClip(segment['audio_path'])
+                commentary = commentary.with_start(segment.get('start_time', 0))  # ← Use with_start
+                
+                volume = segment.get('volume', 1.0)
+                if volume != 1.0:
+                    commentary = commentary.with_volume_scaled(volume)
+                
+                audio_clips.append(commentary)
+                print(f"  ✅ Added commentary #{idx+1} at {segment.get('start_time', 0)}s (volume: {volume}x)")
+            except Exception as e:
+                print(f"  ⚠️ Warning: Failed to add commentary #{idx+1}: {e}")
+                continue
+        
+        # Composite audio
+        if len(audio_clips) > 0:
+            final_audio = CompositeAudioClip(audio_clips)
+            result = video_clip.with_audio(final_audio)
+            print(f"✅ Commentary audio composite created with {len(audio_clips)} audio tracks")
+            return result
+        else:
+            print("⚠️ No audio clips to composite")
+            return video_clip
+            
+    except Exception as e:
+        print(f"❌ Error adding commentary segments: {e}")
+        import traceback
+        traceback.print_exc()
+        return video_clip
+
 
 def add_zoom_effect(clip, zoom_factor=1.2):
-    """Add a subtle zoom effect to emphasize moments - PRESERVES AUDIO"""
+    """Add subtle zoom effect - FIXED to preserve audio"""
     print(f"🔍 Adding zoom effect (factor: {zoom_factor})...")
     
-    def zoom(get_frame, t):
-        frame = get_frame(t)
-        h, w = frame.shape[:2]
+    try:
+        def zoom(get_frame, t):
+            frame = get_frame(t)
+            h, w = frame.shape[:2]
+            
+            new_h, new_w = int(h / zoom_factor), int(w / zoom_factor)
+            
+            y1, x1 = (h - new_h) // 2, (w - new_w) // 2
+            y2, x2 = y1 + new_h, x1 + new_w
+            
+            cropped = frame[y1:y2, x1:x2]
+            
+            return cv2.resize(cropped, (w, h))
         
-        new_h, new_w = int(h / zoom_factor), int(w / zoom_factor)
+        # Apply zoom effect only to video
+        zoomed = clip.fl(zoom, apply_to=['mask'])
         
-        y1, x1 = (h - new_h) // 2, (w - new_w) // 2
-        y2, x2 = y1 + new_h, x1 + new_w
+        # CRITICAL: Explicitly preserve audio
+        if clip.audio:
+            zoomed = zoomed.with_audio(clip.audio)
+            print("  ✅ Preserved audio after zoom")
         
-        cropped = frame[y1:y2, x1:x2]
+        print(f"✅ Zoom effect applied successfully")
+        return zoomed
         
-        return cv2.resize(cropped, (w, h))
-    
-    # Apply zoom but PRESERVE audio
-    zoomed = clip.fl(zoom, apply_to=['mask'])
-    
-    # Explicitly preserve the audio from original clip
-    if clip.audio:
-        zoomed = zoomed.set_audio(clip.audio)
-    
-    print(f"✅ Zoom effect applied")
-    return zoomed
+    except Exception as e:
+        print(f"❌ Error adding zoom effect: {e}")
+        import traceback
+        traceback.print_exc()
+        return clip
+
+
 
 def export_video(clips, output_path="output.mp4", fps=30):
     final_clip = concatenate_videoclips(clips)
@@ -474,39 +639,7 @@ def generate_ai_voice(text, output_path='temp_voice.mp3'):
         return {'success': True, 'path': output_path}
     except Exception as e:
         return {'success': False, 'error': str(e)}
-def add_multiple_commentary_segments(video_clip, commentary_segments, original_audio_volume=0.3):
-    """Add multiple commentary audio segments at different timestamps"""
-    print(f"🎙️ Adding {len(commentary_segments)} commentary segments...")
-    try:
-        audio_clips = []
-        
-        if video_clip.audio:
-            reduced_original = video_clip.audio.with_volume_scaled(original_audio_volume)
-            audio_clips.append(reduced_original)
-            print(f"  ✅ Reduced original audio to {original_audio_volume * 100}%")
-        
-        for idx, segment in enumerate(commentary_segments):
-            commentary = AudioFileClip(segment['audio_path'])
-            commentary = commentary.with_start(segment.get('start_time', 0))
-            
-            volume = segment.get('volume', 1.0)
-            if volume != 1.0:
-                commentary = commentary.with_volume_scaled(volume)
-            
-            audio_clips.append(commentary)
-            print(f"  ✅ Added commentary #{idx+1} at {segment.get('start_time', 0)}s")
-        
-        if audio_clips:
-            final_audio = CompositeAudioClip(audio_clips)
-            result = video_clip.with_audio(final_audio)
-            print(f"✅ Commentary audio composite created")
-            return result
-        else:
-            return video_clip
-            
-    except Exception as e:
-        print(f"❌ Error adding commentary segments: {e}")
-        return video_clip
+ 
 
 def analyze_video_for_monetization(video_path):
     """Analyze a video to check if it meets monetization criteria"""
